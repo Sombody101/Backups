@@ -10,8 +10,8 @@ initialize_sd_backup() {
     DRIVE="$HOME/LocalScripts" # .BACKUP.sh uses $DRIVE to locate itself, so we need to redefine it from the SD to LocalScripts
 
     using "$___full_backup_path/backup_version.sh"
-    if [[ "$EMERGENCY_SD_VERSION" != "" ]]; then
-        $PRINT "Using $(yellow)v$EMERGENCY_SD_VERSION$(white)"
+    if [[ "$emergency_sd_version" ]]; then
+        $PRINT "Using $(yellow)v$emergency_sd_version$(white)"
     else
         if [[ "$server" == "TRUE" ]]; then
             warn "No extension functions found"
