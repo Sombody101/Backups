@@ -1,5 +1,49 @@
 #!/bin/bash
 
+occ() {
+    : ".BACKUPS: occ"
+    while :; do
+        form -a "$@"
+    done
+}
+
+pathify() {
+    : ".BACKUPS: pathify"
+    IFS="/"
+    echo "$*"
+    unset IFS
+}
+
+warn() {
+    : ".BACKUPS: warn"
+    echo -ne "$(trace): $(red)$*$(norm)\n"
+}
+
+toppath() {
+    : ".BACKUPS: addpath"
+    [[ ! "$1" ]] && {
+        warn "No path given to add to \$PATH"
+        return 1
+    }
+
+    [[ ! "$PATH" =~ $1 ]] && export PATH="$1:$PATH"
+}
+
+botpath() {
+    : ".BACKUPS: addpath"
+    [[ ! "$1" ]] && {
+        warn "No path given to add to \$PATH"
+        return 1
+    }
+
+    [[ ! "$PATH" =~ $1 ]] && export PATH="$PATH:$1"
+}
+
+showpath() {
+    : ".BACKUPS: showPath"
+    tr ':' '\n' <<<"$PATH"
+}
+
 A_Has() {
     search_string=$1
     shift
@@ -77,26 +121,24 @@ trace() {
     local stack
 
     for f in "${FUNCNAME[@]:2}"; do
-        [[ "$stack" == "" ]] && stack="$(cyan)$f" || stack="$(cyan)$f$(yellow)>$(cyan)$stack"
+        [[ "$stack" ]] && stack="$(cyan)$f" || stack="$(cyan)$f$(yellow)>$(cyan)$stack"
     done
 
     printf '%s' "$stack$(norm)"
 }
 
 # Print variables and their values (debugging)
-lvar() 
-{
+lvar() {
     local count=0
-    
+
     for var in "$@"; do
         echo "$count: $var: \`${!var}\`"
         ((count++))
     done
 }
 
-# Shits-n-giggles
-bday() {
-    local target_date="2024-07-07 12:00:00"
+time_until_date() {
+    local target_date="$*"
     local current_epoch=$(date +%s)
     local target_epoch=$(date -d "$target_date" +%s)
     local seconds_remaining=$((target_epoch - current_epoch))
@@ -111,46 +153,42 @@ bday() {
     echo "$months months, $days days, $hours hours, $minutes minutes, $seconds seconds"
 }
 
+# Shits-n-giggles
+bday() {
+    time_until_date "2024-07-07 12:00:00"
+}
+
 lday() {
-    local target_date="2024-05-28 12:00:00"
-    local current_epoch=$(date +%s)
-    local target_epoch=$(date -d "$target_date" +%s)
-    local seconds_remaining=$((target_epoch - current_epoch))
-    local months=$((seconds_remaining / 2592000))
-    local seconds_remaining=$((seconds_remaining % 2592000))
-    local days=$((seconds_remaining / 86400))
-    local seconds_remaining=$((seconds_remaining % 86400))
-    local hours=$((seconds_remaining / 3600))
-    local seconds_remaining=$((seconds_remaining % 3600))
-    local minutes=$((seconds_remaining / 60))
-    local seconds=$((seconds_remaining % 60))
-    echo "$months months, $days days, $hours hours, $minutes minutes, $seconds seconds"
+    time_until_date "2024-05-28 12:00:00"
 }
 
 watch() {
     local type="$1"
 
-    [[ "$type" == "-v" ]] && { # Variable
-        [[ "$2" == "" ]] && { warn "No variable provided"; return 1; }
-        c
-        while :
-        do
-            echo -ne "\r${!2}    "
-            sleep .1
-        done
-        return 0
+    shift
+    local inputs=("$@")
+
+    [[ "${#inputs[@]}" -eq 0 ]] && {
+        warn "No inputs provided"
     }
 
-    [[ "$type" == "-c" ]] && {
-        [[ "$2" == "" ]] && { warn "No command provided"; return 1; }
-        c
-        while :
-        do
-            echo -ne "\r$($2)    "
-            sleep .1
+    local op=
+    case $type in
+    "-v") op='echo "${!item}"' ;;
+    "-c") op='echo $(item)' ;;
+    esac
+
+    prnt() {
+        tput cup 0 0
+
+        for item in "${inputs[@]}"; do
+            : "$item"
+            $op
         done
-        return 0
     }
 
-    warn "Unknown option '$1'"
+    while :; do
+        prnt "$type" "${inputs[@]}"
+        sleep .1
+    done
 }
