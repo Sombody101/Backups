@@ -1,6 +1,6 @@
 #!/bin/bash
 
-___full_backup_path="$HOME/LocalScripts/.emergency_bashext_backup"
+___full_backup_path="$LS/.emergency_bashext_backup"
 
 # Copies $BACKS to $HOME/LocalScripts
 dump_all_sh_from_sd() {
@@ -36,13 +36,13 @@ dump_all_sh_from_sd() {
         }
 
         echo "[cp $type -> $YELLOW\$LS$NORM]: ${item//$BACKS\//}$suffix"
-        sudo cp -r "$item" "$___full_backup_path"
+        cp -r "$item" "$___full_backup_path"
     done
 
     shopt -u dotglob
 
     echo "Updating emergency loader file..."
-    sudo cp "$EBG/.emergency_backup_loader.sh" "$HOME/LocalScripts"
+    cp "$EBG/.emergency_backup_loader.sh" "$HOME/LocalScripts"
 
     #if [ ! -f "$___full_backup_path/backup_version.sh" ]; then
     #    echo -ne "#!/bin/bash\n" | sudo tee -a "$___full_backup_path/backup_version.sh" 2>&1 >/dev/null
@@ -61,7 +61,7 @@ dump_all_sh_from_sd() {
     echo "Signing with: $dt"
 
     echo -ne "#!/bin/bash\nemergency_backup_version=\"$dt\"\n" >"$tmpbackv"
-    sudo mv "$tmpbackv" "$backv"
+    mv "$tmpbackv" "$backv"
 
     echo "New backup created"
 }
