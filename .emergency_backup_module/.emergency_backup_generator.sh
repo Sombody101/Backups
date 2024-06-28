@@ -57,8 +57,8 @@ dump_all_sh_from_sd() {
     echo -e "#!/bin/bash\nemergency_backup_version=\"$dt\"\n" >"$backv"
 
     echo "Making readonly"
-    chmod 0444 -R "$___full_backup_path"
-    chmod 0444 "$EBG/.emergency_backup_loader.sh"
+    chmod 500 -R "$___full_backup_path"
+    chmod 500 "$LS/.emergency_backup_loader.sh"
 
     echo "New backup created"
 }
