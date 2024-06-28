@@ -16,7 +16,7 @@ path.pathify() {
 
 warn() {
     : "bashext: warn"
-    printf '%s: %s%s%s' "$(trace)" "$RED" "$*" "$NORM" >&2
+    printf '%s: %s%s%s\n' "$(trace)" "$RED" "$*" "$NORM" >&2
 }
 
 path.toppath() {
@@ -220,4 +220,27 @@ resetwsl() {
     else
         warn "Failed to get powershell. Is this WSL and C:\\ mounted?"
     fi
+}
+
+git.set-url() {
+    : "Assign a new remote for a github repo"
+    : "<remote name> <github token> <username> <project name>"
+    : "origin some_token username project_name"
+
+    git rev-parse 2>"$NULL" || {
+        warn "Not in github repo"
+        return 1
+    }
+
+    local name="$1"
+    local token="$2"
+    local username="$3"
+    local projName="$4"
+
+    git remote set-url "$name" "https://$username:$token@github.com/$username/$projName.git" || {
+        warn "Failed to set remote url"
+        return 1
+    }
+
+    git remote -v
 }
