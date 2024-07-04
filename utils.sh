@@ -97,6 +97,7 @@ string.isstr() {
     return 1
 }
 
+
 applyBackspaces() {
     local input="$*"
 
@@ -143,7 +144,7 @@ lvar() {
     done
 }
 
-time_until_date() {
+time.until_date() {
     local target_date="$*"
     local current_epoch=$(date +%s)
     local target_epoch=$(date -d "$target_date" +%s)
@@ -159,7 +160,7 @@ time_until_date() {
     echo "$months months, $days days, $hours hours, $minutes minutes, $seconds seconds"
 }
 
-seconds_until_date() {
+time.seconds_until_date() {
     local target_date="$*"
     local current_epoch=$(date +%s)
     local target_epoch=$(date -d "$target_date" +%s)
@@ -244,3 +245,5 @@ git.set-url() {
 
     git remote -v
 }
+
+register_module path file array string time git

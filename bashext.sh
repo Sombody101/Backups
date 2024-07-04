@@ -3,7 +3,9 @@
 NULL=/dev/null
 alias grep='grep --color=auto'
 
-PS1="\[\033[0m\]$PS1"
+# So the PS1 prompt never has colors bleeding from a previous command
+export PS1="\[\033[0m\]$PS1"
+export PS4='+\[$YELLOW\]$(basename ${BASH_SOURCE} 2>/dev/null):\[$RED\]${LINENO}: \[$(echo -ne "\e[38;2;255;165;0m")\]${FUNCNAME[0]}()\[$NORM\] - \[$CYAN\][${SHLVL},${BASH_SUBSHELL},$?]\[$NORM\] '
 
 newnav() {
     : ".BACKUPS: newnav"
