@@ -15,7 +15,7 @@ __padLeft() {
 # Better to use the command "basename"
 GetName() {
     : ".BACKUPS: GetName"
-    [[ "$*" == "" ]] && warn "No files provided" && return 1
+    [[ "$*" == "" ]] && core::warn "No files provided" && return 1
     local DRIVE
     local NUM=0
     local FOLD=""
@@ -45,7 +45,7 @@ GetDrive() {
             DRIVE=/mnt/$letter && return 0
         fi
     done
-    [[ $ARGS == *"-q" ]] && warn "Unable to find drive" && return 1
+    [[ $ARGS == *"-q" ]] && core::warn "Unable to find drive" && return 1
 }
 
 GetDate() {
@@ -63,13 +63,13 @@ backup() {
     GetDate
     GetDrive
     [[ $DRIVE == "" ]] && {
-        warn No SDCard
+        core::warn No SDCard
         return 1
     }
 
-    mkdir "$DRIVE"/.BACKUPS/"$DATE" || warn Failed to create backup directory "$DRIVE"/"$DATE"
-    cp -r "$LS" "$DRIVE"/.BACKUPS/"$DATE" || warn Failed to copy LocalScripts "$DRIVE"/"$DATE"
-    cp "$HOME"/.bashrc "$DRIVE"/.BACKUPS/"$DATE" || warn Failed to copy .bashrc to "$DRIVE"/"$DATE"
+    mkdir "$DRIVE"/.BACKUPS/"$DATE" || core::warn Failed to create backup directory "$DRIVE"/"$DATE"
+    cp -r "$LS" "$DRIVE"/.BACKUPS/"$DATE" || core::warn Failed to copy LocalScripts "$DRIVE"/"$DATE"
+    cp "$HOME"/.bashrc "$DRIVE"/.BACKUPS/"$DATE" || core::warn Failed to copy .bashrc to "$DRIVE"/"$DATE"
     __padRight backup
     [[ $text != "" ]] && text="\n\e[96m  $text"
     echo -ne "\e[33m$(date) \e[90m:: $(cat "$HOME"/.__TEMP_INFO.INFO)$text" >"$DRIVE"/.BACKUPS/"$DATE"/.BACKUP.INFO
@@ -82,7 +82,7 @@ backups() {
     : ".BACKUPS: backups"
     GetDrive
     [[ $DRIVE == "" ]] && {
-        warn No SDCard
+        core::warn No SDCard
         return 1
     }
 
@@ -125,7 +125,7 @@ backups() {
 
 pack() {
     : ".BACKUPS: pack"
-    [[ "$*" == "" ]] && warn No files provided && return 1
+    [[ "$*" == "" ]] && core::warn No files provided && return 1
     local files
     local DRIVE
     local DATE
@@ -143,7 +143,7 @@ pack() {
         LAP=$((LAP + 1))
     done
 
-    mkdir "$DRIVE/.BACKUPS/$DATE" || warn Failed to create backup directory "$DRIVE"/"$DATE"
+    mkdir "$DRIVE/.BACKUPS/$DATE" || core::warn Failed to create backup directory "$DRIVE"/"$DATE"
     for file in "${files[@]}"; do
         [[ $file == "" ]] && continue
         [ -d "$file" ] && cp -r "$file" "$DRIVE"/.BACKUPS/"$DATE" && echo Packed "$file" && continue
@@ -158,19 +158,15 @@ pack() {
 
 unback() {
     : ".BACKUPS: unback"
-    [[ "$*" == "" ]] && warn No files provided && return 1
+    [[ "$*" == "" ]] && core::warn No files provided && return 1
     if [[ $1 =~ ^[0-9]+$ ]]; then
         echo Accepted &>/dev/null
     else
-        warn Numbers only
+        core::warn Numbers only
         return 1
     fi
 
-    local DRIVE=
-    local NUM=0
-    local FOUND=FALSE
-    local FOLDER=""
-    local FOLDER_NAME=""
+    local DRIVE NUM=0 FOUND=FALSE FOLDER FOLDER_NAME
 
     DRIVE=$(GetDrive -o)
     for folder in "$DRIVE"/.BACKUPS/*/; do
@@ -197,15 +193,11 @@ cont() {
     if [[ $1 =~ ^[0-9]+$ ]]; then
         echo Accepted &>/dev/null
     else
-        warn Numbers only
+        core::warn Numbers only
         return 1
     fi
 
-    local DRIVE
-    local NUM=0
-    local FOUND=FALSE
-    local FOLDER=""
-    local FOLDER_NAME=""
+    local DRIVE NUM=0 FOUND=FALSE FOLDER FOLDER_NAME
 
     # Find wanted backup folder
     DRIVE=$(GetDrive -o)
@@ -222,16 +214,13 @@ cont() {
         echo -ne "$(red)No backup found with number \e[35m[$1]\n"
         return 1
     else
-        local ARGS=$(read -ra "$(find "$FOLDER")")
-        local arr=()
-        local type=()
-        local HEADER="$DRIVE\/.BACKUPS\/$FOLDER_NAME\/"
+        local ARGS=$(read -ra "$(find "$FOLDER")") arr=() type=() HEADER="$DRIVE\/.BACKUPS\/$FOLDER_NAME\/"
 
         # Get content from indevidual files (cat them)
         if [[ $2 != "" ]] && [[ $(echo "$2" | sed 's/i//g') =~ ^[0-9]+$ ]]; then
             local T=0
             for line in "${ARGS[@]}"; do
-                [[ $T -eq $(echo "$2" | sed 's/i//g') ]] && [[ -d $line ]] && warn Cannot cat a directory && return 1
+                [[ $T -eq $(echo "$2" | sed 's/i//g') ]] && [[ -d $line ]] && core::warn Cannot cat a directory && return 1
                 [[ $T -eq $(echo "$2" | sed 's/i//g') ]] && echo -ne "\n$(cat "$line")\n\n" && return 0
                 T=$((T + 1))
             done
@@ -286,11 +275,9 @@ cont() {
 
 goto() {
     : ".BACKUPS: goto"
-    [[ "$*" == "" ]] && warn No files provided && return 1
-    local DRIVE=$(GetDrive -o)
-    local NUM=0
-    local FOUND=FALSE
-    local FOLDER=""
+    [[ "$*" == "" ]] && core::warn No files provided && return 1
+    local DRIVE=$(GetDrive -o) NUM=0 FOUND=FALSE FOLDER
+
     for folder in "$DRIVE"/.BACKUPS/*/; do
         if [[ $folder == *"_"* ]] && [[ $folder == *":"* ]]; then
             [ $NUM -eq "$1" ] && FOUND=TRUE && FOLDER=$folder && break
@@ -302,7 +289,7 @@ goto() {
         echo -ne "$(red)No backup found with number \e[35m[$1]\n"
         return 1
     else
-        cd "$FOLDER" || warn Failed to change directory to "$FOLDER"
+        cd "$FOLDER" || core::warn Failed to change directory to "$FOLDER"
         ls -a
         return 0
     fi
@@ -310,20 +297,17 @@ goto() {
 
 overwrite() {
     : ".BACKUPS: overwrite"
-    [[ "$*" == "" ]] && warn No files provided && return 1
-    [[ "$2" == "" ]] && warn No replacement files provided && return 1
+    [[ "$*" == "" ]] && core::warn No files provided && return 1
+    [[ "$2" == "" ]] && core::warn No replacement files provided && return 1
     if [[ $1 =~ ^[0-9]+$ ]]; then
         echo Accepted &>/dev/null
     else
-        warn Numbers only
+        core::warn Numbers only
         return 1
     fi
-    local DRIVE=
+    local DRIVE NUM=0 FOUND=FALSE FOLDER FOLDER_NAME
     DRIVE=$(GetDrive -o)
-    local NUM=0
-    local FOUND=FALSE
-    local FOLDER=""
-    local FOLDER_NAME=""
+
     for folder in "$DRIVE"/.BACKUPS/*/; do
         if [[ $folder == *"_"* ]] && [[ $folder == *":"* ]]; then
             [ $NUM -eq "$1" ] && FOUND=TRUE && FOLDER=$folder && FOLDER_NAME=${folder//$DRIVE\/.BACKUPS/} && break
@@ -334,9 +318,9 @@ overwrite() {
         echo -ne "$(red)No backup found with number \e[35m[$1]\n"
         return 1
     else
-        warn "Are you sure you want to overwrite backup $(magenta)[$1]$(red)? (y/n)"
+        core::warn "Are you sure you want to overwrite backup $(magenta)[$1]$(red)? (y/n)"
         while [[ $answer != "y" ]] && [[ $answer != "n" ]]; do
-            cat "$FOLDER"/.BACKUP.INFO || warn NO_BACKUP_INFO
+            cat "$FOLDER"/.BACKUP.INFO || core::warn NO_BACKUP_INFO
             echo -ne "\n$(red)Are you sure you want to remove backup $(magenta)[$1]$(red)? (y/n)\n"
             read -r answer
             [[ $answer != "y" ]] && [[ $answer != "n" ]] && echo -ne "\n$(red)\"y\" or \"n\"\n" && continue
@@ -351,7 +335,7 @@ overwrite() {
                 [[ -f $file ]] && cp "$file" "$FOLDER"
             done
         fi
-        [[ $answer == "n" ]] && warn Aborted && unset answer && return 1
+        [[ $answer == "n" ]] && core::warn Aborted && unset answer && return 1
     fi
 }
 
@@ -387,10 +371,9 @@ form() {
     #local ARGS=($(sudo find . 2>/dev/null))
     [[ $1 == "" ]] && local DIR="."
     mapfile -t ARGS < <(sudo find "$DIR" 2>/dev/null)
-    local arr=()
-    local type=()
-    local HEADER="$(pwd)"
-    local LAP=0
+    
+    local arr=() type=() HEADER="$(pwd)" LAP=0
+
     set +f
     unset IFS
     for line in "${ARGS[@]}"; do
@@ -486,7 +469,7 @@ asyncform() {
     LEN=$("$LAST_LINE"+4)
 
     # loop over all files and directories in the given directory
-    //find "$DIR" -mindepth 1 -maxdepth 1 ! -name '.BACKUP.INFO' -exec "$BACKS"/.PROCESS_FILE.sh bash {} +
+    # find "$DIR" -mindepth 1 -maxdepth 1 ! -name '.BACKUP.INFO' -exec "$BACKS"/.PROCESS_FILE.sh bash {} +
     for file in "$DIR"/* "$DIR"/.[!.]*; do
         [[ "$file" == */.BACKUP.INFO ]] && continue
 
@@ -502,7 +485,7 @@ count_lines() {
     : ".BACKUPS: count_lines"
     # Check if the directory path is provided
     if [[ -z "$1" ]]; then
-        warn "Directory path is missing."
+        core::warn "Directory path is missing."
         return 1
     fi
 

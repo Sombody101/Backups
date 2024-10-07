@@ -1,16 +1,14 @@
 #!/bin/bash
 
-NULL=/dev/null
 alias grep='grep --color=auto'
 
 # So the PS1 prompt never has colors bleeding from a previous command
 export PS1="\[\033[0m\]$PS1"
-export PS4='#| \[$YELLOW\]$(basename ${BASH_SOURCE} 2>/dev/null):\[$RED\]${LINENO}: \[$(echo -ne "\e[38;2;255;165;0m")\]${FUNCNAME[0]}()\[$NORM\] - \[$CYAN\][${SHLVL},${BASH_SUBSHELL},$?]\[$NORM\] '
+export PS4='#| \[$YELLOW\]$(basename ${BASH_SOURCE} 2>/dev/null):\[$RED\]${LINENO}: \[$(echo -ne "\e[38;2;255;165;0m")\]${FUNCNAME[0]}\[$NORM\] - \[$CYAN\][${SHLVL},${BASH_SUBSHELL},$?]\[$NORM\] '
 
 newnav() {
     : ".BACKUPS: newnav"
 
-    local name path
 
     [[ ! "$1" ]] && {
         warn "No arguments provided"
@@ -22,14 +20,12 @@ newnav() {
         return 1
     }
 
+    local name
     name=$1
-    path=$2
-    shift 2
 
-    eval "$name() {
-    local path=\"\$(path.pathify \"\$*\")\"
-    cd \"$path\"/\$path || warn \"Failed to locate \$path\";
-}"
+    shift
+
+    eval "$name() { local path=\"\$(path.pathify \"$*\" \"\$*\")\"; cd \"\$path\" || warn \"Failed to locate \$path\"; }"
 }
 
 BACKS="$DRIVE/.BACKUPS/.LOADER"
@@ -42,10 +38,9 @@ CST_M="$CST/cstools.main.sh"
 ST="$BACKS/site-tools/site-tools.sh"
 #GC="$BACKS/git-cmds/git_cmds.sh"
 APPS="$BACKS/.apps"
-LAPPS="$LS/.lapps"
 
 # Quiet Un-Alias
-qunalias() { unalias "$1" 2>$NULL; }
+qunalias() { unalias "$1" 2>/dev/null; }
 
 # Support issues with pre-summer devices (requires unalias)
 qunalias drive
@@ -57,6 +52,11 @@ newnav home "$HOME"
 newnav main "/"
 newnav cst "$CST"
 
+flag WSL && {
+    newnav apps "/mnt/e/AppsIWillNeverFinish/"
+    alias get_tok='cat $DRIVE/z-Other/'??t.to?
+}
+
 alias clrhist='> $HOME/.bash_history'
 
 # Set the namespace
@@ -65,14 +65,12 @@ setspace "$BACKS"
 using "command_parser.sh"
 using "utils.sh"
 using "debugging/verbose.sh"
-# I don't really use this since I started to use GitHub, so there's no reason importing such a large file
 #using "backup_manager/backup.sh"
-regnload "$BACKS/.extras.sh (Unused)"
 using "tsklist/TASKLIST.sh"
 using "$CST_M"
 #using "$GC" # -f # The file gets sourced, but using logs a "File Not Found" error, so -f
 using "$ST"
-using "showcase.sh"
+#using "showcase.sh"
 
 # Import EmergencyBackupGenerator if not currently using a backup
 [[ ! "$backup_env" ]] && {
@@ -120,7 +118,15 @@ unset qunalias
 
 vs() {
     : ".BACKUPS: vs"
-    (code "${*:-.}")
+    local file_path="${*:-.}"
+
+    # No VSCode, so use Nano
+    [[ ! "$(which code)" ]] && {
+	ed "$file_path"
+        return $?
+    }
+
+    (code "$file_path")
 }
 
 # Register file

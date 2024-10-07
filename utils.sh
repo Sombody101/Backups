@@ -5,11 +5,11 @@ core::warn() {
     printf '%s: %s%s%s\n' "$(trace)" "$RED" "$*" "$NORM" >&2
 }
 
-# Until all usages are transered to 'core::warn'
+# Until all usages are converted to 'core::warn'
 warn() { core::warn "$*"; }
 
 path.pathify() {
-    : "bashext: pathify"
+    : "bashext: path.pathify"
     IFS="/"
     echo "$*"
     unset IFS
@@ -115,7 +115,7 @@ trace() {
         [[ "$stack" ]] && stack="$CYAN$f" || stack="$CYAN$f$YELLOW>$CYAN$stack"
     done
 
-    echo "${stack::-1}$NORM"
+    echo "$stack$NORM"
 }
 
 # Print variables and their values (debugging)
@@ -208,7 +208,7 @@ resetwsl() {
         echo "Resetting..."
         cmd.exe /C "wsl.exe" "--shutdown" # Kill
     else
-        warn "Failed to get powershell. Is this WSL and C:\\ mounted?"
+        core::warn "Failed to get powershell. Is this WSL and C:\\ mounted?"
     fi
 }
 
@@ -218,7 +218,7 @@ git.set-url() {
     : "origin some_token username project_name"
 
     git rev-parse 2>"/dev/null" || {
-        warn "Not in github repo"
+        core::warn "Not in github repo"
         return 1
     }
 
@@ -228,11 +228,60 @@ git.set-url() {
     local projName="$4"
 
     git remote set-url "$name" "https://$username:$token@github.com/$username/$projName.git" || {
-        warn "Failed to set remote url"
+        core::warn "Failed to set remote url"
         return 1
     }
 
     git remote -v
 }
 
-register_module path file array string time git
+dir.sizes() {
+    for item in $(echo ./.* ./* | grep); do
+        du -sh "$item"
+    done
+}
+
+cpair() {
+    local filename="$1"
+
+    [[ ! "$filename" ]] && {
+        core::warn "No file name given"
+        return 1
+    }
+
+    local file_h="$filename.h" \
+        file_cpp="$filename.cpp" \
+        exit=
+
+    [[ -f "$file_h" ]] && {
+        core::warn "The file $file_h already exists"
+        exit="true"
+    }
+
+    [[ -f "$file_cpp" ]] && {
+        core::warn "The file $file_cpp already exists"
+        exit="true"
+    }
+
+    [[ "$exit" ]] && return 1
+
+    touch "$file_h"
+
+    {
+        echo "#ifndef ${filename}_h"
+        echo "#define ${filename}_h"
+        echo
+        echo "#endif"
+    } >>"$file_h"
+
+    touch "$file_cpp"
+    echo "#include \"$file_h\"" >>"$file_cpp"
+}
+
+register_module path \
+    file \
+    array \
+    string \
+    time \
+    git \
+    dir
